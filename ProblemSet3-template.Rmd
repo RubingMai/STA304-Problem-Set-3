@@ -33,9 +33,9 @@ We are interested in predicting the overall popular vote of the 2020 American fe
 
 ## Model Specifics
 
-Since I want to know whether people will vote for Donald Trump or Joe Biden, the response variable should be binary. Thus, logistic regression model(frequentist) will be used to model the proportion of voters who will vote for Donald Trump or Joe Biden. 
+Since I want to know whether people will vote for Donald Trump or Joe Biden, the response variable should be binary. Thus, logistic regression model(frequentist) will be used to model the proportion of voters who will vote for Donald Trump or Joe Biden. In addition, all the model process will be done by using RStudio.
 
-We are interested in how variables, such as age($x_1$), gender($x_2$), region($x_3$), employment($x_4$) and race($x_5$) influence the proportion of voters who will vote for Donald Trump or Joe Biden($y$). $\beta_0$ represents the intercept of the model. $\beta_1$ is a slope of model. It tells us for every one unit increase in age($x_1$), we expect a 0.0133($\hat{\beta_1}$) increase in the probability of voting for Donald Trump($y$). $\beta_2$ to $\beta_5$ represent the average difference in $y$ between the categories of categorical variables $x_2$ to $x_5$. For example, it shows males are more likely to vote Donald Trump.
+We are interested in how variables, such as age($x_1$), gender($x_2$), region($x_3$), employment($x_4$) and race($x_5$) influence the proportion of voters who will vote for Donald Trump or Joe Biden($y$). $\beta_0$ represents the intercept of the model. $\beta_1$ is a slope of model. It tells us for every one unit increase in age($x_1$), we expect a 0.0133($\hat{\beta_1}$) increase in the probability of voting for Donald Trump($y$). $\beta_2$ to $\beta_5$ represent the average difference in the proportion of voters who will vote for Donald Trump or Joe Biden between the categories of categorical variables gender, region, employment and race. For example, it shows males are more likely to vote Donald Trump.
 
 Logistic regression model: 
 $$ y = \beta_0+\beta_1  x_{age} +\beta_2  x_{gender} +\beta_3  x_{region} + \beta_4  x_{employment} +\beta_5  x_{race} + \epsilon$$
@@ -148,23 +148,26 @@ predict_biden <-
   mutate(alp_predict_prop = estimate_biden*n) %>%
   summarise(predict_biden = sum(alp_predict_prop)/sum(n))
 
+```
+
+# Results
+
+```{r, echo=FALSE}
+
 cbind(predict_trump,predict_biden)
 
 other <- 1-predict_trump-predict_biden
-
 slices <- c(0.4251157, 0.4373694, 0.1375149)
 lbls <- c("Vote for Donald Trump - 42.5%", "Vote for Joe Biden - 43.7%","Other - 13.8%")
 pie(slices, labels = lbls, col = c("light pink", "light blue", "light grey"), main="Figure 1")
 
 ```
 
-# Results
-
 We estimate that the proportion of voters in favor of voting for Donald Trump or Joe Biden to be 0.4251157 and 0.4373694 respectively. This is based off my post-stratification analysis of the proportion of voters in favor of Donald Trump or Joe Biden modeled by logistic regression models, which accounted for age, gender, region, employment, race. Figure 1 is a pie chart which shows the proportion of voting for each of them. There are also 13.8% of population who do not vote or have not decided who to vote.
 
 # Discussion
 
-To complete the estimation of the proportion of voters who will vote for Donald Trump or Joe Biden, logical regression model is used to make the post-stratification analysis to estimate the proportion of votes in each bin of cells(age, gender, region, employment, race). Then I weight each proportion estimate by the corresponding population size, then add them up and divide by the total population size. Finally, I got the overall forecast results.
+Two data sets are used to complete the estimation of the proportion of voters who will vote for Donald Trump or Joe Biden. The survey data is provided by Democracy Fund Voter Study Group. The census data(2018 5-year ACS) is provided by IPUMS USA. Logical regression model is used to make the post-stratification analysis to estimate the proportion of votes in each bin of cells(age, gender, region, employment, race). Then I weight each proportion estimate by the corresponding population size of that bin, then add them up and divide by the total population size. Finally, I got the overall forecast results.
 
 Based off the estimated proportion of voters in favor of voting for Donald Trump or Joe Biden being 0.4251157 and 0.4373694 respectively, I predict that Joe Biden will win the election. In addition, Figure 1 shows the proportion in a visible way that includes 13.8% of population who do not vote or have not decided who to vote.
 
@@ -180,13 +183,15 @@ Firstly, I will compare the estimated results with the actual election results. 
 
 1. Dassonneville, R., & Tien, C. (2020). Introduction to Forecasting the 2020 US Elections. PS: Political Science & Politics, 1-5. https://doi.org/10.1017/S104909652000147X
 
-2. Hadley Wickham and Evan Miller (2020). haven: Import and Export 'SPSS', 'Stata' and 'SAS' Files. R package version 2.3.1. https://CRAN.R-project.org/package=haven
+2. Hadley Wickham and Evan Miller. (2020). haven: Import and Export 'SPSS', 'Stata' and 'SAS' Files. R package version 2.3.1. https://CRAN.R-project.org/package=haven
+
+3. RStudio Team. (2020). RStudio: Integrated Development for R. RStudio, PBC, Boston, MA URL http://www.rstudio.com/.
   
-3. Steven Ruggles, Sarah Flood, Ronald Goeken, Josiah Grover, Erin Meyer, Jose Pacas and Matthew Sobek. IPUMS USA: Version 10.0 [usa_00003.dat]. Minneapolis, MN: IPUMS, 2020. https://doi.org/10.18128/D010.V10.0
+4. Steven Ruggles, Sarah Flood, Ronald Goeken, Josiah Grover, Erin Meyer, Jose Pacas and Matthew Sobek. IPUMS USA: Version 10.0 [usa_00003.dat]. Minneapolis, MN: IPUMS, 2020. https://doi.org/10.18128/D010.V10.0
 
-4. Tausanovitch, Chris and Lynn Vavreck. (2020). Democracy Fund + UCLA Nationscape, October 10-17, 2019. Version 20200814. https://www.voterstudygroup.org/downloads?key=676e2373-8473-4faa-8fe9-f9935b043aeb
+5. Tausanovitch, Chris and Lynn Vavreck. (2020). Democracy Fund + UCLA Nationscape, October 10-17, 2019. Version 20200814. https://www.voterstudygroup.org/downloads?key=676e2373-8473-4faa-8fe9-f9935b043aeb
 
-5. Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686. https://doi.org/10.21105/joss.01686
+6. Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686. https://doi.org/10.21105/joss.01686
 
 # Appendix
 
