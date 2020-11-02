@@ -1,0 +1,193 @@
+---
+title: "Prediction of the Overall Popular Vote of the 2020 American Federal Election"
+author: "Rubing Mai"
+date: "November 2, 2020"
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+
+library(tidyverse)
+
+# Loading in the cleaned survey Data
+survey_data <- read_csv("/Users/zella/Desktop/STA304 PS3 DATA/Outputs/survey_data.csv")
+
+# Loading in the cleaned census Data
+census_data <- read_csv("/Users/zella/Desktop/STA304 PS3 DATA/Outputs/census_data.csv")
+
+```
+
+# Prediction of the Overall Popular Vote of the 2020 American Federal Election
+
+## Rubing Mai 
+## November 2, 2020
+
+
+# Model
+
+We are interested in predicting the overall popular vote of the 2020 American federal election(Dassonneville, R., & Tien, C. 2020). To do this we are firstly using logistic regression model and then employing a post-stratification technique. More details about model and post-stratification calculation will be described in the following subsections.
+
+
+## Model Specifics
+
+Since I want to know whether people will vote for Donald Trump or Joe Biden, the response variable should be binary. Thus, logistic regression model(frequentist) will be used to model the proportion of voters who will vote for Donald Trump or Joe Biden. 
+
+We are interested in how variables, such as age($x_1$), gender($x_2$), region($x_3$), employment($x_4$) and race($x_5$) influence the proportion of voters who will vote for Donald Trump or Joe Biden($y$). $\beta_0$ represents the intercept of the model. $\beta_1$ is a slope of model. It tells us for every one unit increase in age($x_1$), we expect a 0.0133($\hat{\beta_1}$) increase in the probability of voting for Donald Trump($y$). $\beta_2$ to $\beta_5$ represent the average difference in $y$ between the categories of categorical variables $x_2$ to $x_5$. For example, it shows males are more likely to vote Donald Trump.
+
+Logistic regression model: 
+$$ y = \beta_0+\beta_1  x_{age} +\beta_2  x_{gender} +\beta_3  x_{region} + \beta_4  x_{employment} +\beta_5  x_{race} + \epsilon$$
+
+```{r, echo=FALSE}
+
+# Change variable names
+
+survey_data<- 
+  survey_data %>% 
+  mutate(employment = ifelse(employment == "Full-time employed","employed",employment)) %>%
+  mutate(employment = ifelse(employment == "Part-time employed","employed",employment)) %>%
+  mutate(employment = ifelse(employment == "Self-employed","employed",employment)) %>%
+  mutate(employment = ifelse(employment == "Unemployed or temporarily on layoff","unemployed",employment)) %>%
+  mutate(employment = ifelse(employment == "Homemaker","not in labor force",employment)) %>%
+  mutate(employment = ifelse(employment == "Retired","not in labor force",employment)) %>%
+  mutate(employment = ifelse(employment == "Permanently disabled","not in labor force",employment)) %>%
+  mutate(employment = ifelse(employment == "Student","not in labor force",employment)) %>%
+  mutate(race_ethnicity = ifelse(race_ethnicity == "Asian (Asian Indian)","Asian",race_ethnicity)) %>%
+  mutate(race_ethnicity = ifelse(race_ethnicity == "Asian (Chinese)","Asian",race_ethnicity)) %>%
+  mutate(race_ethnicity = ifelse(race_ethnicity == "Asian (Filipino)","Asian",race_ethnicity)) %>%
+  mutate(race_ethnicity = ifelse(race_ethnicity == "Asian (Japanese)","Asian",race_ethnicity)) %>%
+  mutate(race_ethnicity = ifelse(race_ethnicity == "Asian (Korean)","Asian",race_ethnicity)) %>%
+  mutate(race_ethnicity = ifelse(race_ethnicity == "Asian (Vietnamese)","Asian",race_ethnicity)) %>%
+  mutate(race_ethnicity = ifelse(race_ethnicity == "Asian (Other)","Other Asian or Pacific Islander",race_ethnicity)) %>%
+  mutate(race_ethnicity = ifelse(race_ethnicity == "Pacific Islander (Native Hawaiian)","Other Asian or Pacific Islander",race_ethnicity)) %>%
+  mutate(race_ethnicity = ifelse(race_ethnicity == "Pacific Islander (Guamanian)","Other Asian or Pacific Islander",race_ethnicity)) %>%
+  mutate(race_ethnicity = ifelse(race_ethnicity == "Pacific Islander (Samoan)","Other Asian or Pacific Islander",race_ethnicity)) %>%
+  mutate(race_ethnicity = ifelse(race_ethnicity == "Pacific Islander (Other)","Other Asian or Pacific Islander",race_ethnicity)) %>%
+  rename(race = race_ethnicity) %>%
+  rename(region = census_region)
+
+# Creating the Model
+
+model_trump <- glm(vote_trump ~ age + gender + region + employment + race, 
+            data=survey_data, family="binomial")
+
+model_biden <- glm(vote_biden ~ age + gender + region + employment + race, 
+            data=survey_data, family="binomial")
+
+
+# Model Results (to Report in Results section)
+broom::tidy(model_trump)
+broom::tidy(model_biden)
+
+```
+
+## Significant Variables and Categories
+
+From the logistic regression summary table, we can determine that there are some significant variables includes categorical variables where some of the categories are significant. This is because their p-value is less than 0.05. Significant variables could influence voter outcomes.
+
+For Donald Trump model, males, south region, Asian, Black, or African American, other Asian or Pacific Islander, some other race and people who are not in labor force are significant categories. Then, age is a significant variable. For Joe Biden model, males, south region, and Asian, Black, or African American, other Asian or Pacific Islander, and some other race are significant categories.
+
+## Post-Stratification 
+
+To estimate the proportion of voters who will vote for Donald Trump or Joe Biden, I will do a post-stratification analysis. Firstly, I create cells based off different age, gender, region, employment, race. These variables are chosen because they are significant or contain some significant categories. So they are likely to influence voter outcomes. Then using the logistic regression models in the previous sub-section to estimate the proportion of voters in each bin of cells. Next, I will weight each proportion estimate within each bin of cells by the corresponding population size of that bin, then add these values and divide by the total population size.
+
+```{r, echo=FALSE}
+
+# Here I will perform the post-stratification calculation
+census_data<- 
+  census_data %>% 
+  rename(gender = sex) %>% 
+  mutate(gender = ifelse(gender == "male","Male","Female"))
+
+census_data<- 
+  census_data %>%
+  mutate(region = ifelse(region == "new england division","Northeast", region)) %>%
+  mutate(region = ifelse(region == "middle atlantic division","Northeast", region)) %>%
+  mutate(region = ifelse(region == "east north central div","Midwest", region)) %>%
+  mutate(region = ifelse(region == "west north central div","Midwest", region)) %>%
+  mutate(region = ifelse(region == "south atlantic division","South", region)) %>%
+  mutate(region = ifelse(region == "east south central div","South", region)) %>%
+  mutate(region = ifelse(region == "west south central div","South", region)) %>%
+  mutate(region = ifelse(region == "mountain division","West", region)) %>%
+  mutate(region = ifelse(region == "pacific division","West", region))
+
+census_data<- 
+  census_data %>%
+  rename(employment = empstat)
+
+census_data<- 
+  census_data %>%
+  mutate(race = ifelse(race == "white","White",race)) %>%
+  mutate(race = ifelse(race == "black/african american/negro","Black, or African American",race)) %>%
+  mutate(race = ifelse(race == "american indian or alaska native","American Indian or Alaska Native",race)) %>%
+  mutate(race = ifelse(race == "chinese","Asian",race)) %>%
+  mutate(race = ifelse(race == "japanese","Asian",race)) %>%
+  mutate(race = ifelse(race == "other asian or pacific islander","Other Asian or Pacific Islander",race)) %>%
+  mutate(race = ifelse(race == "other race, nec","Some other race",race))
+  
+  
+#trump
+census_data$estimate_trump <-
+  model_trump %>%
+  predict(newdata = census_data, type = "response")
+
+predict_trump <-
+  census_data %>%
+  mutate(alp_predict_prop = estimate_trump*n) %>%
+  summarise(predict_trump = sum(alp_predict_prop)/sum(n))
+
+#biden
+census_data$estimate_biden <-
+  model_biden %>%
+  predict(newdata = census_data, type = "response")
+
+predict_biden <-
+  census_data %>%
+  mutate(alp_predict_prop = estimate_biden*n) %>%
+  summarise(predict_biden = sum(alp_predict_prop)/sum(n))
+
+cbind(predict_trump,predict_biden)
+
+other <- 1-predict_trump-predict_biden
+
+slices <- c(0.4251157, 0.4373694, 0.1375149)
+lbls <- c("Vote for Donald Trump - 42.5%", "Vote for Joe Biden - 43.7%","Other - 13.8%")
+pie(slices, labels = lbls, col = c("light pink", "light blue", "light grey"), main="Figure 1")
+
+```
+
+# Results
+
+We estimate that the proportion of voters in favor of voting for Donald Trump or Joe Biden to be 0.4251157 and 0.4373694 respectively. This is based off my post-stratification analysis of the proportion of voters in favor of Donald Trump or Joe Biden modeled by logistic regression models, which accounted for age, gender, region, employment, race. Figure 1 is a pie chart which shows the proportion of voting for each of them. There are also 13.8% of population who do not vote or have not decided who to vote.
+
+# Discussion
+
+To complete the estimation of the proportion of voters who will vote for Donald Trump or Joe Biden, logical regression model is used to make the post-stratification analysis to estimate the proportion of votes in each bin of cells(age, gender, region, employment, race). Then I weight each proportion estimate by the corresponding population size, then add them up and divide by the total population size. Finally, I got the overall forecast results.
+
+Based off the estimated proportion of voters in favor of voting for Donald Trump or Joe Biden being 0.4251157 and 0.4373694 respectively, I predict that Joe Biden will win the election. In addition, Figure 1 shows the proportion in a visible way that includes 13.8% of population who do not vote or have not decided who to vote.
+
+## Weaknesses
+
+2018 5-year ACS was collected through 2014 to 2018. But in 2020, there have been many accidents that made society unstable, such as COVID-19 and large-scale demonstrations. The economy is greatly affected. People's living conditions in 2020 are completely different from 2014-2018. So using 2018 5-year census data may have some influence on the prediction results.
+
+## Next Steps
+
+Firstly, I will compare the estimated results with the actual election results. Then, I will conduct a follow-up survey that contains several variables that are considered to be significant when making estimates. Then use the new data and the same model to estimate the proportion of votes again. Finally, compare the new results with the actual election results and previous estimates. If the new results are very different from the actual results, other models can be applied in future election estimates.
+
+# References
+
+1. Dassonneville, R., & Tien, C. (2020). Introduction to Forecasting the 2020 US Elections. PS: Political Science & Politics, 1-5. https://doi.org/10.1017/S104909652000147X
+
+2. Hadley Wickham and Evan Miller (2020). haven: Import and Export 'SPSS', 'Stata' and 'SAS' Files. R package version 2.3.1. https://CRAN.R-project.org/package=haven
+  
+3. Steven Ruggles, Sarah Flood, Ronald Goeken, Josiah Grover, Erin Meyer, Jose Pacas and Matthew Sobek. IPUMS USA: Version 10.0 [usa_00003.dat]. Minneapolis, MN: IPUMS, 2020. https://doi.org/10.18128/D010.V10.0
+
+4. Tausanovitch, Chris and Lynn Vavreck. (2020). Democracy Fund + UCLA Nationscape, October 10-17, 2019. Version 20200814. https://www.voterstudygroup.org/downloads?key=676e2373-8473-4faa-8fe9-f9935b043aeb
+
+5. Wickham et al., (2019). Welcome to the tidyverse. Journal of Open Source Software, 4(43), 1686. https://doi.org/10.21105/joss.01686
+
+# Appendix
+
+https://github.com/RubingMai/STA304-Problem-Set-3
